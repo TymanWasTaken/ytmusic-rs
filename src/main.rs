@@ -1,70 +1,45 @@
-use gtk::prelude::*;
-use gtk::{Application, ApplicationWindow, Button};
-use sha1::{Digest, Sha1};
+pub mod ytm_utils;
+
+// use gtk::prelude::*;
+// use gtk::{Application, ApplicationWindow, Button};
+use hyper::Client;
+use hyper_tls::HttpsConnector;
 use std::fs;
-use std::time::{SystemTime, UNIX_EPOCH};
+use ytm_utils::utils::Headers;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let headers_file = fs::read_to_string("headers.txt").expect("Fuck");
+    let headers = fs::read_to_string("headers.txt").expect("Fuck");
+    let mut headers = Headers::new(&headers);
 
-    let authorization = get_authorization(&headers_file);
+    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
 
-    println!("{}", authorization);
+    dbg!(headers.set_visitor_id(&client).await);
+    dbg!(headers.set_authorization());
+    dbg!(headers);
 
-    let application = Application::builder()
-        .application_id("tech.tyman.YtMusicRs")
-        .build();
+    // let application = Application::builder()
+    //     .application_id("tech.tyman.YtMusicRs")
+    //     .build();
 
-    application.connect_activate(|app| {
-        let window = ApplicationWindow::builder()
-            .application(app)
-            .title("YouTube Music")
-            .default_width(350)
-            .default_height(70)
-            .build();
+    // application.connect_activate(|app| {
+    //     let window = ApplicationWindow::builder()
+    //         .application(app)
+    //         .title("YouTube Music")
+    //         .default_width(350)
+    //         .default_height(70)
+    //         .build();
 
-        let button = Button::with_label("Click me!");
-        button.connect_clicked(|_| {
-            eprintln!("Clicked!");
-        });
-        window.add(&button);
+    //     let button = Button::with_label("Click me!");
+    //     button.connect_clicked(|_| {
+    //         eprintln!("Clicked!");
+    //     });
+    //     window.add(&button);
 
-        window.show_all();
-    });
+    //     window.show_all();
+    // });
 
-    application.run();
+    // application.run();
 
     Ok(())
-}
-
-fn get_authorization(headers: &String) -> String {
-    let cookie_line = headers
-        .split("\n")
-        .find(|&x| x.starts_with("Cookie: "))
-        .expect("Fuck v2");
-    let sapisid = cookie_line
-        .split(";")
-        .find(|&x| x.contains("__Secure-1PSID="))
-        .expect("Fuck v3")
-        .trim()
-        .split("=")
-        .nth(1)
-        .expect("Fuck v4");
-    let since_the_epoch = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Fuck v5")
-        .as_secs();
-    let mut hasher = Sha1::new();
-    hasher.update(
-        format!(
-            "{} {} {}",
-            since_the_epoch, sapisid, "https://music.youtube.com"
-        )
-        .as_bytes(),
-    );
-    let hash = hasher.finalize();
-    let hash = hash.as_slice().to_vec();
-    let hash = hex::encode(&hash);
-    hash
 }

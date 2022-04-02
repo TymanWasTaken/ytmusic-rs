@@ -7,5 +7,8 @@ version = "0.1.0"
 gtk = "0.15.4"
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
+hyper-tls = "0.5.0"
+flate2 = "1.0.22"
 sha1 = "0.10.0"
 hex = "0.4.3"
+regex = "1.5.5"
