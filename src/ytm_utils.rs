@@ -1,9 +1,10 @@
 pub mod utils {
     use regex::Regex;
-    use reqwest::header::HeaderMap;
+    use reqwest::header::{HeaderMap, HeaderName};
     use reqwest::{Body, Client, Method, RequestBuilder, Response};
     use serde_json::Value;
     use sha1::{Digest, Sha1};
+    use std::str::FromStr;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[derive(Debug)]
@@ -95,11 +96,14 @@ pub mod utils {
 
         pub fn add_headers(&self, request: RequestBuilder, authorized: bool) -> RequestBuilder {
             let mut headers = HeaderMap::new();
-            self.headers_text.lines().for_each(|line| {
-                let header = line.splitn(1, ": ");
-                let (name, value) = (header.nth(0).unwrap(), header.nth(1).unwrap());
-                headers.insert(name, value.parse().unwrap());
-            });
+            for line in self.headers_text.as_str().lines() {
+                let mut header = line.splitn(2, ": ");
+                let (name, value) = (header.next().unwrap(), header.next().unwrap());
+                headers.insert(HeaderName::from_str(name).unwrap(), value.to_string().parse().unwrap());
+            }
+            headers.remove("Cookie");
+            headers.remove("Authorization");
+            headers.remove("X-Goog-Visitor-Id");
             if authorized {
                 headers.append("Cookie", self.get_header("Cookie").parse().unwrap());
                 if self.authorization.is_some() {
@@ -114,10 +118,6 @@ pub mod utils {
                         self.x_goog_visitor_id.as_ref().unwrap().parse().unwrap(),
                     );
                 }
-            } else {
-                headers.remove("Cookie");
-                headers.remove("Authorization");
-                headers.remove("X-Goog-Visitor-Id");
             }
             request.headers(headers)
         }
@@ -130,7 +130,7 @@ pub mod utils {
 
     impl Endpoint {
         pub fn url(&self) -> String {
-            format!("https://music.youtube.com/youtubei/v1/{}?alt=json&key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30", self.path)
+            format!("https://music.youtube.com/youtubei/v1/{}?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false", self.path)
         }
 
         pub async fn make_request(
@@ -146,7 +146,6 @@ pub mod utils {
                 _ => panic!("Method type {} not supported", method),
             };
             let request = headers.add_headers(request, true);
-            dbg!(&request);
             request.send().await
         }
     }

@@ -1,10 +1,12 @@
 pub mod ytm_utils;
+pub mod json;
 
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, Button};
-use reqwest::{Body, Client, Method};
+use reqwest::{Client, Method};
 use std::fs;
 use ytm_utils::utils::{Endpoint, Headers};
+use json::structs::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -23,11 +25,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         &client,
         Method::POST,
         &headers,
-        Body::from("{\"browseId\": \"FEmusic_liked_playlists\"}"),
+        RequestBody {
+            browseId: "FEmusic_liked_playlists".to_string(),
+            context: RequestContext::new(),
+        }.as_body()
     )
     .await
     .unwrap();
-    dbg!(result.text().await.unwrap());
+    
+    let result = result.text().await.unwrap();
+
+    fs::write("e.json", result);
 
     let application = Application::builder()
         .application_id("tech.tyman.YtMusicRs")
