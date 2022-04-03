@@ -1,45 +1,45 @@
 pub mod ytm_utils;
 
-// use gtk::prelude::*;
-// use gtk::{Application, ApplicationWindow, Button};
-use hyper::Client;
-use hyper_tls::HttpsConnector;
+use gtk::prelude::*;
+use gtk::{Application, ApplicationWindow, Button};
+use reqwest::{Client, Method, Body};
 use std::fs;
-use ytm_utils::utils::Headers;
+use ytm_utils::utils::{Headers, Endpoint};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let headers = fs::read_to_string("headers.txt").expect("Fuck");
     let mut headers = Headers::new(&headers);
 
-    let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
+    let client = Client::new();
 
-    dbg!(headers.set_visitor_id(&client).await);
-    dbg!(headers.set_authorization());
-    dbg!(headers);
+    headers.set_visitor_id(&client).await;
+    headers.set_authorization();
 
-    // let application = Application::builder()
-    //     .application_id("tech.tyman.YtMusicRs")
-    //     .build();
+    let result = Endpoint {
+        path: "browse".to_string()
+    }.make_request(&client, Method::POST, &headers, Body::from("{\"browseId\": \"FEmusic_liked_playlists\"}")).await.unwrap();
+    dbg!(result.text().await.unwrap());
 
-    // application.connect_activate(|app| {
-    //     let window = ApplicationWindow::builder()
-    //         .application(app)
-    //         .title("YouTube Music")
-    //         .default_width(350)
-    //         .default_height(70)
-    //         .build();
+    let application = Application::builder()
+        .application_id("tech.tyman.YtMusicRs")
+        .build();
 
-    //     let button = Button::with_label("Click me!");
-    //     button.connect_clicked(|_| {
-    //         eprintln!("Clicked!");
-    //     });
-    //     window.add(&button);
+    application.connect_activate(|app| {
+        let window = ApplicationWindow::builder()
+            .application(app)
+            .title("YouTube Music")
+            .default_width(350)
+            .default_height(70)
+            .build();
 
-    //     window.show_all();
-    // });
+        let button = Button::with_label("Click me!");
+        window.add(&button);
 
-    // application.run();
+        window.show_all();
+    });
+
+    application.run();
 
     Ok(())
 }
