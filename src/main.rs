@@ -2,9 +2,9 @@ pub mod ytm_utils;
 
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, Button};
-use reqwest::{Client, Method, Body};
+use reqwest::{Body, Client, Method};
 use std::fs;
-use ytm_utils::utils::{Headers, Endpoint};
+use ytm_utils::utils::{Endpoint, Headers};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -17,8 +17,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     headers.set_authorization();
 
     let result = Endpoint {
-        path: "browse".to_string()
-    }.make_request(&client, Method::POST, &headers, Body::from("{\"browseId\": \"FEmusic_liked_playlists\"}")).await.unwrap();
+        path: "browse".to_string(),
+    }
+    .make_request(
+        &client,
+        Method::POST,
+        &headers,
+        Body::from("{\"browseId\": \"FEmusic_liked_playlists\"}"),
+    )
+    .await
+    .unwrap();
     dbg!(result.text().await.unwrap());
 
     let application = Application::builder()

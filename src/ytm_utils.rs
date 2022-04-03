@@ -1,17 +1,17 @@
 pub mod utils {
+    use regex::Regex;
     use reqwest::header::HeaderMap;
-    use reqwest::{Client, RequestBuilder, Method, Body, Response};
+    use reqwest::{Body, Client, Method, RequestBuilder, Response};
+    use serde_json::Value;
     use sha1::{Digest, Sha1};
     use std::time::{SystemTime, UNIX_EPOCH};
-    use regex::Regex;
-    use serde_json::Value;
 
     #[derive(Debug)]
     pub struct Headers {
         x_goog_visitor_id: Option<String>,
         authorization: Option<String>,
         sapisid: String,
-        headers_text: String
+        headers_text: String,
     }
 
     impl Headers {
@@ -34,7 +34,7 @@ pub mod utils {
                 x_goog_visitor_id: None,
                 authorization: None,
                 sapisid: sapisid.to_string(),
-                headers_text: data.to_string()
+                headers_text: data.to_string(),
             }
         }
 
@@ -53,10 +53,23 @@ pub mod utils {
             let request = self.add_headers(request, false);
 
             let response = request.send().await.expect("Request failure");
-            let response = response.text().await.expect("Unable to get response body for some reason");
-            let captures = Regex::new(r"ytcfg\.set\s*\(\s*(\{.+?\})\s*\)\s*;").unwrap().captures(&response).expect("Unable to parse http response");
-            let parsed_json: Value = serde_json::from_str(captures.get(1).expect("Unable to parse visitor id").as_str()).unwrap();
-            self.x_goog_visitor_id = Some(parsed_json["VISITOR_DATA"].as_str().unwrap().to_string());
+            let response = response
+                .text()
+                .await
+                .expect("Unable to get response body for some reason");
+            let captures = Regex::new(r"ytcfg\.set\s*\(\s*(\{.+?\})\s*\)\s*;")
+                .unwrap()
+                .captures(&response)
+                .expect("Unable to parse http response");
+            let parsed_json: Value = serde_json::from_str(
+                captures
+                    .get(1)
+                    .expect("Unable to parse visitor id")
+                    .as_str(),
+            )
+            .unwrap();
+            self.x_goog_visitor_id =
+                Some(parsed_json["VISITOR_DATA"].as_str().unwrap().to_string());
         }
 
         pub fn set_authorization(&mut self) {
@@ -65,8 +78,15 @@ pub mod utils {
                 .expect("Fuck v5")
                 .as_secs();
             let mut hasher = Sha1::new();
-            hasher
-                .update(format!("{} {} {}", since_the_epoch, self.sapisid, self.get_header("Origin")).as_bytes());
+            hasher.update(
+                format!(
+                    "{} {} {}",
+                    since_the_epoch,
+                    self.sapisid,
+                    self.get_header("Origin")
+                )
+                .as_bytes(),
+            );
             let hash = hasher.finalize();
             let hash = hash.as_slice().to_vec();
             let hash = hex::encode(&hash);
@@ -76,7 +96,7 @@ pub mod utils {
         pub fn add_headers(&self, request: RequestBuilder, authorized: bool) -> RequestBuilder {
             let mut headers = HeaderMap::new();
             self.headers_text.lines().for_each(|line| {
-                let header = line.splitn(1,": ");
+                let header = line.splitn(1, ": ");
                 let (name, value) = (header.nth(0).unwrap(), header.nth(1).unwrap());
                 headers.insert(name, value.parse().unwrap());
             });
@@ -123,7 +143,7 @@ pub mod utils {
             let request = match method {
                 Method::GET => client.get(&self.url()),
                 Method::POST => client.post(&self.url()).body(body),
-                _ => panic!("Method type {} not supported", method)
+                _ => panic!("Method type {} not supported", method),
             };
             let request = headers.add_headers(request, true);
             dbg!(&request);
