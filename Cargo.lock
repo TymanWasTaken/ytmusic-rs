@@ -1659,15 +1659,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "ytmusic-rs"
+name = "ytmusic-api"
 version = "0.1.0"
 dependencies = [
- "gtk",
  "hex",
  "regex",
  "reqwest",
  "serde",
  "serde_json",
  "sha1",
+]
+
+[[package]]
+name = "ytmusic-gui"
+version = "0.1.0"
+dependencies = [
+ "gtk",
+ "reqwest",
  "tokio",
+ "ytmusic-api",
 ]

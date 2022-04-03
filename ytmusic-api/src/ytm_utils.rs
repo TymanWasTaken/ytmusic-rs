@@ -99,7 +99,10 @@ pub mod utils {
             for line in self.headers_text.as_str().lines() {
                 let mut header = line.splitn(2, ": ");
                 let (name, value) = (header.next().unwrap(), header.next().unwrap());
-                headers.insert(HeaderName::from_str(name).unwrap(), value.to_string().parse().unwrap());
+                headers.insert(
+                    HeaderName::from_str(name).unwrap(),
+                    value.to_string().parse().unwrap(),
+                );
             }
             headers.remove("Cookie");
             headers.remove("Authorization");

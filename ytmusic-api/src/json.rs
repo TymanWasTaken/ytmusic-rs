@@ -6,7 +6,7 @@ pub mod structs {
     #[derive(Serialize, Debug)]
     pub struct RequestClient {
         clientName: String,
-        clientVersion: String
+        clientVersion: String,
     }
 
     #[derive(Serialize, Debug)]
@@ -15,14 +15,14 @@ pub mod structs {
     #[derive(Serialize, Debug)]
     pub struct RequestContext {
         client: RequestClient,
-        user: RequestUser
+        user: RequestUser,
     }
 
     #[allow(non_snake_case)]
     #[derive(Serialize, Debug)]
     pub struct RequestBody {
         pub browseId: String,
-        pub context: RequestContext
+        pub context: RequestContext,
     }
 
     impl RequestUser {
@@ -35,7 +35,7 @@ pub mod structs {
         pub fn new() -> RequestClient {
             RequestClient {
                 clientName: String::from("WEB_REMIX"),
-                clientVersion: String::from("0.1")
+                clientVersion: String::from("0.1"),
             }
         }
     }
@@ -44,7 +44,7 @@ pub mod structs {
         pub fn new() -> RequestContext {
             RequestContext {
                 client: RequestClient::new(),
-                user: RequestUser::new()
+                user: RequestUser::new(),
             }
         }
     }

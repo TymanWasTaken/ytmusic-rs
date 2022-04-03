@@ -1,12 +1,9 @@
-pub mod ytm_utils;
-pub mod json;
-
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, Button};
 use reqwest::{Client, Method};
 use std::fs;
-use ytm_utils::utils::{Endpoint, Headers};
-use json::structs::*;
+use ytmusic_api::structs::*;
+use ytmusic_api::utils::{Endpoint, Headers};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -28,14 +25,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         RequestBody {
             browseId: "FEmusic_liked_playlists".to_string(),
             context: RequestContext::new(),
-        }.as_body()
+        }
+        .as_body(),
     )
     .await
     .unwrap();
-    
-    let result = result.text().await.unwrap();
 
-    fs::write("e.json", result);
+    let result = result.text().await.unwrap();
 
     let application = Application::builder()
         .application_id("tech.tyman.YtMusicRs")
