@@ -4,6 +4,8 @@ pub mod utils {
     use reqwest::{Body, Client, Method, RequestBuilder, Response};
     use serde_json::Value;
     use sha1::{Digest, Sha1};
+    use std::cell::RefCell;
+    use std::rc::Rc;
     use std::str::FromStr;
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -128,27 +130,35 @@ pub mod utils {
 
     #[derive(Debug)]
     pub struct Endpoint {
-        pub path: String,
+        path: String,
+        client: Rc<Client>,
+        headers: Rc<RefCell<Headers>>,
     }
 
     impl Endpoint {
+        pub fn new(path: &str, client: Rc<Client>, headers: Rc<RefCell<Headers>>) -> Endpoint {
+            Endpoint {
+                path: path.to_string(),
+                client,
+                headers,
+            }
+        }
+
         pub fn url(&self) -> String {
             format!("https://music.youtube.com/youtubei/v1/{}?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false", self.path)
         }
 
         pub async fn make_request(
             &self,
-            client: &Client,
             method: Method,
-            headers: &Headers,
             body: Body,
         ) -> Result<Response, reqwest::Error> {
             let request = match method {
-                Method::GET => client.get(&self.url()),
-                Method::POST => client.post(&self.url()).body(body),
+                Method::GET => self.client.get(&self.url()),
+                Method::POST => self.client.post(&self.url()).body(body),
                 _ => panic!("Method type {} not supported", method),
             };
-            let request = headers.add_headers(request, true);
+            let request = self.headers.borrow().add_headers(request, true);
             request.send().await
         }
     }
