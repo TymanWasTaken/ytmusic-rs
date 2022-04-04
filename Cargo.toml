@@ -7,7 +7,6 @@ authors = ["Tyman"]
 [workspace]
 
 [dependencies]
-gtk = { version = "0.4.7", package = "gtk4" }
-tokio = { version = "1", features = ["full"] }
+iced = "0.3"
 reqwest = { version = "0.11.10", features = ["gzip"] }
 ytmusic-api = { path = "ytmusic-api" }
