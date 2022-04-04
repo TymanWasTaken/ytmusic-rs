@@ -1,6 +1,7 @@
+mod ui;
+
 use gtk::prelude::*;
 use gtk::Application;
-use gtk::ApplicationWindow;
 // use reqwest::Method;
 // use ytmusic_api::structs::*;
 // use ytmusic_api::YtMusicClient;
@@ -27,23 +28,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .application_id("tech.tyman.YtMusicRs")
         .build();
 
-    application.connect_activate(build_ui);
+    application.connect_activate(ui::setup_ui);
 
     application.run();
 
     Ok(())
-}
-
-fn build_ui(app: &Application) {
-    let window = ApplicationWindow::builder()
-        .application(app)
-        .title("YouTube Music")
-        // .default_width(350)
-        // .default_height(70)
-        .build();
-
-    // let button = Button::with_label("Click me!");
-    // window.set_child(Some(&button));
-
-    window.present();
 }

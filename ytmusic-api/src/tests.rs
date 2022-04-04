@@ -15,16 +15,23 @@ async fn test_browse_playlists() {
     println!("Headers successfully set, testing browse playlists");
     let endpoint = client.endpoint("browse");
     println!("Endpoint created for /youtubei/v1/browse");
-    let response = endpoint.make_request(
-        Method::POST,
-        RequestBody {
-            browseId: "FEmusic_liked_playlists".to_string(),
-            context: RequestContext::new(),
-        }
-        .as_body(),
-    ).await.expect("Error fetching endpoint");
+    let response = endpoint
+        .make_request(
+            Method::POST,
+            RequestBody {
+                browseId: "FEmusic_liked_playlists".to_string(),
+                context: RequestContext::new(),
+            }
+            .as_body(),
+        )
+        .await
+        .expect("Error fetching endpoint");
     println!("Successful response for browse endpoint, attempting to parse");
-    let response = response.text().await.expect("Unable to get string response from endpoint");
-    let _: Value = serde_json::from_str(&response).expect("Error parsing string response into JSON");
+    let response = response
+        .text()
+        .await
+        .expect("Unable to get string response from endpoint");
+    let _: Value =
+        serde_json::from_str(&response).expect("Error parsing string response into JSON");
     println!("Successfully parsed response");
 }
