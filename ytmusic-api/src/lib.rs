@@ -32,3 +32,6 @@ impl YtMusicClient {
         Endpoint::new(endpoint, self.client.clone(), self.headers.clone())
     }
 }
+
+#[cfg(test)]
+mod tests;

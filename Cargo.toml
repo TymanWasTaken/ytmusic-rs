@@ -2,11 +2,12 @@
 edition = "2021"
 name = "ytmusic-gui"
 version = "0.1.0"
+authors = ["Tyman"]
 
 [workspace]
 
 [dependencies]
-gtk = "0.15.4"
+gtk = { version = "0.4.7", package = "gtk4" }
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.11.10", features = ["gzip"] }
 ytmusic-api = { path = "ytmusic-api" }
