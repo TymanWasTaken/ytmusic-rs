@@ -162,4 +162,14 @@ pub mod utils {
             request.send().await
         }
     }
+
+    pub fn find_object_by_key(list: &Value, key: &str) -> Option<Value> {
+        for item in list.as_array().expect("Object was not an array") {
+            let item2 = &item[key];
+            if item2.is_object() {
+                return Some(item.clone());
+            }
+        }
+        None
+    }
 }

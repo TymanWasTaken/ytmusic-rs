@@ -1,28 +1,23 @@
 use iced::{
     button, executor, Application, Button, Column,
-    Command, Container, Element, Length, Row, Settings, Subscription, Text,
+    Command, Container, Element, Length, Row, Settings, Subscription, Text, Clipboard,
 };
 use std::time::{Duration, Instant};
 
 pub fn main() -> iced::Result {
-    Stopwatch::run(Settings::default())
+    MusicGui::run(Settings::default())
 }
 
-struct Stopwatch {
-    duration: Duration,
-    state: State,
-    toggle: button::State,
-    reset: button::State,
-}
+struct MusicGui;
 
 enum State {
-    Idle,
-    Ticking { last_tick: Instant },
+    Loading,
+    Loaded
 }
 
 #[derive(Debug, Clone)]
 enum Message {
-    Toggle,
+    Load,
     Reset,
     Tick(Instant),
 }
@@ -48,7 +43,7 @@ impl Application for Stopwatch {
         String::from("Stopwatch - Iced")
     }
 
-    fn update(&mut self, message: Message) -> Command<Message> {
+    fn update(&mut self, message: Message, clipboard: &mut Clipboard) -> Command<Message> {
         match message {
             Message::Toggle => match self.state {
                 State::Idle => {
