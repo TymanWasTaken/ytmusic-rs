@@ -20,20 +20,12 @@ pub fn setup_ui(app: &Application) {
         .column_homogeneous(true)
         .row_homogeneous(true)
         .build();
-    grid.attach(&Label::builder().label("Playlist 1").build(), 0, 0, 1, 1);
-    grid.attach(&Label::builder().label("Pog playlist").build(), 1, 0, 1, 1);
-
-    grid.attach(&Label::builder().label("Playlist 2").build(), 0, 1, 1, 1);
-    grid.attach(&Label::builder().label("ae").build(), 1, 1, 1, 1);
-
-    grid.attach(&Label::builder().label("Playlist 3").build(), 0, 2, 1, 1);
-    grid.attach(
-        &Label::builder().label("I hope this works").build(),
-        1,
-        2,
-        1,
-        1,
-    );
+    
+    for (i, playlist) in playlists.iter().enumerate() {
+        grid.attach(&Label::builder().label(&format!("Playlist {}", i)).build(), 0, i.try_into().unwrap(), 1, 1);
+        grid.attach(&Label::builder().label(&playlist.title).build(), 1, i.try_into().unwrap(), 1, 1);
+    }
+        
     r#box.append(&grid);
 
     window.set_child(Some(&r#box));
