@@ -1,133 +1,75 @@
 use iced::{
-    button, executor, Application, Button, Column,
-    Command, Container, Element, Length, Row, Settings, Subscription, Text, Clipboard,
+    executor, Application, Button, Column,
+    Command, Container, Element, Length, Row, Settings, Text, Clipboard,
 };
-use std::time::{Duration, Instant};
 
 pub fn main() -> iced::Result {
     MusicGui::run(Settings::default())
 }
 
-struct MusicGui;
+struct MusicGui {
+    state: State
+}
 
 enum State {
+    NotLoading,
     Loading,
     Loaded
 }
 
 #[derive(Debug, Clone)]
 enum Message {
-    Load,
-    Reset,
-    Tick(Instant),
+    Load
 }
 
-impl Application for Stopwatch {
+impl Application for MusicGui {
     type Executor = executor::Default;
     type Message = Message;
     type Flags = ();
 
-    fn new(_flags: ()) -> (Stopwatch, Command<Message>) {
+    fn new(_flags: ()) -> (MusicGui, Command<Message>) {
         (
-            Stopwatch {
-                duration: Duration::default(),
-                state: State::Idle,
-                toggle: button::State::new(),
-                reset: button::State::new(),
+            MusicGui {
+                state: State::NotLoading
             },
             Command::none(),
         )
     }
 
     fn title(&self) -> String {
-        String::from("Stopwatch - Iced")
+        String::from("Youtube music")
     }
 
     fn update(&mut self, message: Message, clipboard: &mut Clipboard) -> Command<Message> {
         match message {
-            Message::Toggle => match self.state {
-                State::Idle => {
-                    self.state = State::Ticking {
-                        last_tick: Instant::now(),
-                    };
+            Message::Load => match self.state {
+                State::NotLoading => {
+                    self.state = State::Loading;
                 }
-                State::Ticking { .. } => {
-                    self.state = State::Idle;
-                }
-            },
-            Message::Tick(now) => match &mut self.state {
-                State::Ticking { last_tick } => {
-                    self.duration += now - *last_tick;
-                    *last_tick = now;
-                }
-                _ => {}
-            },
-            Message::Reset => {
-                self.duration = Duration::default();
+                _ => panic!("Tried to load while already loading something!")
             }
         }
 
         Command::none()
     }
 
-    fn subscription(&self) -> Subscription<Message> {
-        match self.state {
-            State::Idle => Subscription::none(),
-            State::Ticking { .. } => {
-                time::every(Duration::from_millis(10)).map(Message::Tick)
-            }
-        }
-    }
+    // fn subscription(&self) -> Subscription<Message> {
+    //     match self.state {
+    //         State::Idle => Subscription::none(),
+    //         State::Ticking { .. } => {
+    //             time::every(Duration::from_millis(10)).map(Message::Tick)
+    //         }
+    //     }
+    // }
 
     fn view(&mut self) -> Element<Message> {
-        const MINUTE: u64 = 60;
-        const HOUR: u64 = 60 * MINUTE;
-
-        let seconds = self.duration.as_secs();
-
-        let duration = Text::new(format!(
-            "{:0>2}:{:0>2}:{:0>2}.{:0>2}",
-            seconds / HOUR,
-            (seconds % HOUR) / MINUTE,
-            seconds % MINUTE,
-            self.duration.subsec_millis() / 10,
-        ))
+        let text = Text::new("Hello world")
         .size(40);
 
-        let button = |state, label, style| {
-            Button::new(
-                state,
-                Text::new(label)
-                    .horizontal_alignment(alignment::Horizontal::Center),
-            )
-            .padding(10)
-            .width(Length::Units(80))
-            .style(style)
-        };
-
-        let toggle_button = {
-            let (label, color) = match self.state {
-                State::Idle => ("Start", style::Button::Primary),
-                State::Ticking { .. } => ("Stop", style::Button::Destructive),
-            };
-
-            button(&mut self.toggle, label, color).on_press(Message::Toggle)
-        };
-
-        let reset_button =
-            button(&mut self.reset, "Reset", style::Button::Secondary)
-                .on_press(Message::Reset);
-
-        let controls = Row::new()
-            .spacing(20)
-            .push(toggle_button)
-            .push(reset_button);
-
         let content = Column::new()
-            .align_items(Alignment::Center)
+            .align_items(iced::Align::Center)
             .spacing(20)
-            .push(duration)
-            .push(controls);
+            .push(text);
 
         Container::new(content)
             .width(Length::Fill)
