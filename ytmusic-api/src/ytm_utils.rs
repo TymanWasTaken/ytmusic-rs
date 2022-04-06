@@ -4,9 +4,9 @@ pub mod utils {
     use reqwest::{Body, Client, Method, RequestBuilder, Response};
     use serde_json::Value;
     use sha1::{Digest, Sha1};
-    use std::cell::RefCell;
-    use std::rc::Rc;
     use std::str::FromStr;
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[derive(Debug)]
@@ -131,12 +131,12 @@ pub mod utils {
     #[derive(Debug)]
     pub struct Endpoint {
         path: String,
-        client: Rc<Client>,
-        headers: Rc<RefCell<Headers>>,
+        client: Arc<Client>,
+        headers: Arc<Mutex<Headers>>,
     }
 
     impl Endpoint {
-        pub fn new(path: &str, client: Rc<Client>, headers: Rc<RefCell<Headers>>) -> Endpoint {
+        pub fn new(path: &str, client: Arc<Client>, headers: Arc<Mutex<Headers>>) -> Endpoint {
             Endpoint {
                 path: path.to_string(),
                 client,
@@ -158,7 +158,7 @@ pub mod utils {
                 Method::POST => self.client.post(&self.url()).body(body),
                 _ => panic!("Method type {} not supported", method),
             };
-            let request = self.headers.borrow().add_headers(request, true);
+            let request = self.headers.lock().await.add_headers(request, true);
             request.send().await
         }
     }

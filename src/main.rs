@@ -1,25 +1,31 @@
+use std::sync::Arc;
+
 use iced::{
-    executor, Application, Button, Column,
-    Command, Container, Element, Length, Row, Settings, Text, Clipboard,
+    executor, Application, Column,
+    Command, Container, Element, Length, Settings, Text, Clipboard, futures::lock::Mutex, VerticalAlignment, Row,
 };
+use reqwest::Method;
+use ytmusic_api::{structs::{Playlist, RequestBody, RequestContext}, YtMusicClient, parsing::{YtMusicResponse, ResponseType}};
 
 pub fn main() -> iced::Result {
     MusicGui::run(Settings::default())
 }
 
+#[allow(dead_code)]
 struct MusicGui {
-    state: State
+    state: State,
+    playlists: Option<Vec<Playlist>>,
+    client: Arc<Mutex<YtMusicClient>>
 }
 
 enum State {
     NotLoading,
-    Loading,
     Loaded
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 enum Message {
-    Load
+    LoadPlaylists(Vec<Playlist>)
 }
 
 impl Application for MusicGui {
@@ -28,11 +34,28 @@ impl Application for MusicGui {
     type Flags = ();
 
     fn new(_flags: ()) -> (MusicGui, Command<Message>) {
+        let client = Arc::new(Mutex::new(YtMusicClient::new("headers.txt")));
+        let client_clone = client.clone();
         (
             MusicGui {
-                state: State::NotLoading
+                state: State::NotLoading,
+                playlists: None,
+                client: client.clone()
             },
-            Command::none(),
+            Command::perform(async move {
+                let client = client_clone.lock().await;
+                client.set_headers().await;
+                let playlists = client.endpoint("browse").make_request(
+                    Method::POST,
+                    RequestBody {
+                        browseId: "FEmusic_liked_playlists".to_string(),
+                        context: RequestContext::new()
+                    }.as_body()
+                ).await.unwrap();
+                playlists.parse(ResponseType::LibraryPlaylists).await
+            }, |playlists| {
+                Message::LoadPlaylists(playlists)
+            }),
         )
     }
 
@@ -40,13 +63,11 @@ impl Application for MusicGui {
         String::from("Youtube music")
     }
 
-    fn update(&mut self, message: Message, clipboard: &mut Clipboard) -> Command<Message> {
+    fn update(&mut self, message: Message, _clipboard: &mut Clipboard) -> Command<Message> {
         match message {
-            Message::Load => match self.state {
-                State::NotLoading => {
-                    self.state = State::Loading;
-                }
-                _ => panic!("Tried to load while already loading something!")
+            Message::LoadPlaylists(playlists) => {
+                self.state = State::Loaded;
+                self.playlists = Some(playlists);
             }
         }
 
@@ -55,21 +76,46 @@ impl Application for MusicGui {
 
     // fn subscription(&self) -> Subscription<Message> {
     //     match self.state {
-    //         State::Idle => Subscription::none(),
-    //         State::Ticking { .. } => {
-    //             time::every(Duration::from_millis(10)).map(Message::Tick)
-    //         }
+    //         State::Loading { .. } => {
+    //             Subscription::from(async {
+
+    //             })
+    //         },
+    //         _ => Subscription::none()
     //     }
     // }
 
     fn view(&mut self) -> Element<Message> {
-        let text = Text::new("Hello world")
-        .size(40);
+        let text = Text::new("Youtube Music")
+            .size(40).vertical_alignment(VerticalAlignment::Top);
 
-        let content = Column::new()
+        let mut content = Column::new()
             .align_items(iced::Align::Center)
             .spacing(20)
             .push(text);
+
+        match &self.playlists {
+            Some(playlists) => {
+                let mut playlists_column = Column::new()
+                    .align_items(iced::Align::Center)
+                    .spacing(10);
+                
+                for (i, playlist) in playlists.iter().enumerate() {
+                    playlists_column = playlists_column.push(
+                        Row::new()
+                            .spacing(10)
+                            .push(Text::new(format!("{}.", i + 1)))
+                            .push(Text::new(playlist.title.as_str()))
+                    );
+                }
+                content = content.push(playlists_column);
+            },
+            None => {
+                content = content.push(
+                    Text::new("Loading...").size(20)
+                );
+            }
+        }
 
         Container::new(content)
             .width(Length::Fill)
@@ -83,6 +129,7 @@ impl Application for MusicGui {
 mod style {
     use iced::{button, Background, Color, Vector};
 
+    #[allow(dead_code)]
     pub enum Button {
         Primary,
         Secondary,
