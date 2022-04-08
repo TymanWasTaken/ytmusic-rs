@@ -24,11 +24,14 @@ impl YtMusicClient {
         }
     }
 
-    pub async fn set_headers(&self) {
+    pub async fn set_headers(&self) -> Option<()> {
         let headers = self.headers.clone();
         let mut headers = headers.lock().await;
+        if headers.authorized { return None };
         headers.set_visitor_id(&self.client).await;
         headers.set_authorization();
+        headers.authorized = true;
+        Some(())
     }
 
     pub fn endpoint(&self, endpoint: &str) -> Endpoint {

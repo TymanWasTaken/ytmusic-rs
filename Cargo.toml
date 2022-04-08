@@ -10,3 +10,4 @@ authors = ["Tyman"]
 iced = { version = "0.3", features = ["tokio"] }
 reqwest = { version = "0.11.10", features = ["gzip"] }
 ytmusic-api = { path = "ytmusic-api" }
+tempfile = "3.3.0"

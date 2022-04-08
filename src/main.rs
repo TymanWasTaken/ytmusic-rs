@@ -1,31 +1,41 @@
-use std::sync::Arc;
+mod guis;
 
+use std::sync::Arc;
 use iced::{
     executor, Application, Column,
-    Command, Container, Element, Length, Settings, Text, Clipboard, futures::lock::Mutex, VerticalAlignment, Row,
+    Command, Container, Element, Length, Settings, Text, Clipboard, futures::lock::Mutex, VerticalAlignment, button,
 };
-use reqwest::Method;
-use ytmusic_api::{structs::{Playlist, RequestBody, RequestContext}, YtMusicClient, parsing::{YtMusicResponse, ResponseType}};
+use ytmusic_api::{structs::Playlist, YtMusicClient};
 
 pub fn main() -> iced::Result {
     MusicGui::run(Settings::default())
 }
 
+pub struct Page {
+    pub name: String,
+    pub state: State,
+    pub nav_state: button::State
+}
+
 #[allow(dead_code)]
-struct MusicGui {
+pub struct MusicGui {
     state: State,
+    pages: Vec<Page>,
     playlists: Option<Vec<Playlist>>,
     client: Arc<Mutex<YtMusicClient>>
 }
 
-enum State {
-    NotLoading,
-    Loaded
+#[derive(Debug, Clone)]
+pub enum State {
+    Home,
+    Playlists
 }
 
-#[derive(Debug)]
-enum Message {
-    LoadPlaylists(Vec<Playlist>)
+#[derive(Debug, Clone)]
+pub enum Message {
+    LoadPlaylists(Vec<Playlist>),
+    HeadersSet,
+    Navigate(State)
 }
 
 impl Application for MusicGui {
@@ -38,23 +48,27 @@ impl Application for MusicGui {
         let client_clone = client.clone();
         (
             MusicGui {
-                state: State::NotLoading,
+                state: State::Home,
                 playlists: None,
-                client: client.clone()
+                client: client.clone(),
+                pages: vec![
+                    Page {
+                        name: "Home".to_string(),
+                        state: State::Home,
+                        nav_state: button::State::new()
+                    },
+                    Page {
+                        name: "Playlists".to_string(),
+                        state: State::Playlists,
+                        nav_state: button::State::new()
+                    }
+                ]
             },
             Command::perform(async move {
                 let client = client_clone.lock().await;
                 client.set_headers().await;
-                let playlists = client.endpoint("browse").make_request(
-                    Method::POST,
-                    RequestBody {
-                        browseId: "FEmusic_liked_playlists".to_string(),
-                        context: RequestContext::new()
-                    }.as_body()
-                ).await.unwrap();
-                playlists.parse(ResponseType::LibraryPlaylists).await
-            }, |playlists| {
-                Message::LoadPlaylists(playlists)
+            }, |_| {
+                Message::HeadersSet
             }),
         )
     }
@@ -64,14 +78,22 @@ impl Application for MusicGui {
     }
 
     fn update(&mut self, message: Message, _clipboard: &mut Clipboard) -> Command<Message> {
+        let mut command = Command::none();
         match message {
+            Message::HeadersSet => (),
             Message::LoadPlaylists(playlists) => {
-                self.state = State::Loaded;
                 self.playlists = Some(playlists);
+            },
+            Message::Navigate(state) => {
+                match &state {
+                    State::Home => (),
+                    State::Playlists => command = guis::library_playlists::load(self.client.clone()),
+                }
+                self.state = state;
             }
         }
 
-        Command::none()
+        command
     }
 
     // fn subscription(&self) -> Subscription<Message> {
@@ -89,33 +111,15 @@ impl Application for MusicGui {
         let text = Text::new("Youtube Music")
             .size(40).vertical_alignment(VerticalAlignment::Top);
 
-        let mut content = Column::new()
+        let content = Column::new()
             .align_items(iced::Align::Center)
             .spacing(20)
             .push(text);
 
-        match &self.playlists {
-            Some(playlists) => {
-                let mut playlists_column = Column::new()
-                    .align_items(iced::Align::Center)
-                    .spacing(10);
-                
-                for (i, playlist) in playlists.iter().enumerate() {
-                    playlists_column = playlists_column.push(
-                        Row::new()
-                            .spacing(10)
-                            .push(Text::new(format!("{}.", i + 1)))
-                            .push(Text::new(playlist.title.as_str()))
-                    );
-                }
-                content = content.push(playlists_column);
-            },
-            None => {
-                content = content.push(
-                    Text::new("Loading...").size(20)
-                );
-            }
-        }
+        let content = match &self.state {
+            State::Home => guis::home::render(self, content),
+            State::Playlists => guis::library_playlists::render(self, content)
+        };
 
         Container::new(content)
             .width(Length::Fill)
@@ -144,8 +148,8 @@ mod style {
                     Button::Secondary => Color::from_rgb(0.5, 0.5, 0.5),
                     Button::Destructive => Color::from_rgb(0.8, 0.2, 0.2),
                 })),
-                border_radius: 12.0,
-                shadow_offset: Vector::new(1.0, 1.0),
+                border_radius: 5.0,
+                shadow_offset: Vector::new(0.5, 0.5),
                 text_color: Color::WHITE,
                 ..button::Style::default()
             }

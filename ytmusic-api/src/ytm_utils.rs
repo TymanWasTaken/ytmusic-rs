@@ -15,6 +15,7 @@ pub mod utils {
         authorization: Option<String>,
         sapisid: String,
         headers_text: String,
+        pub authorized: bool
     }
 
     impl Headers {
@@ -38,6 +39,7 @@ pub mod utils {
                 authorization: None,
                 sapisid: sapisid.to_string(),
                 headers_text: data.to_string(),
+                authorized: false
             }
         }
 
