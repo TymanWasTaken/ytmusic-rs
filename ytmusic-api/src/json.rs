@@ -55,14 +55,14 @@ pub mod structs {
         }
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct Playlist {
         pub title: String,
         pub id: String,
         pub thumbnails: Vec<Thumnail>
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct Thumnail {
         pub height: u16,
         pub width: u16,
