@@ -3,7 +3,9 @@ mod guis;
 use std::sync::Arc;
 use iced::{
     executor, Application, Column,
-    Command, Container, Element, Length, Settings, Text, Clipboard, futures::lock::Mutex, VerticalAlignment, button,
+    Command, Container, Element, Length, 
+    Settings, Text, Clipboard, futures::lock::Mutex, 
+    button, Row, HorizontalAlignment, Button
 };
 use ytmusic_api::{structs::Playlist, YtMusicClient};
 
@@ -87,7 +89,7 @@ impl Application for MusicGui {
             Message::Navigate(state) => {
                 match &state {
                     State::Home => (),
-                    State::Playlists => command = guis::library_playlists::load(self.client.clone()),
+                    State::Playlists => command = guis::library_playlists::load(self, self.client.clone()),
                 }
                 self.state = state;
             }
@@ -96,42 +98,56 @@ impl Application for MusicGui {
         command
     }
 
-    // fn subscription(&self) -> Subscription<Message> {
-    //     match self.state {
-    //         State::Loading { .. } => {
-    //             Subscription::from(async {
-
-    //             })
-    //         },
-    //         _ => Subscription::none()
-    //     }
-    // }
-
     fn view(&mut self) -> Element<Message> {
-        let text = Text::new("Youtube Music")
-            .size(40).vertical_alignment(VerticalAlignment::Top);
-
-        let content = Column::new()
-            .align_items(iced::Align::Center)
-            .spacing(20)
-            .push(text);
-
-        let content = match &self.state {
-            State::Home => guis::home::render(self, content),
-            State::Playlists => guis::library_playlists::render(self, content)
+        let mut elements: Vec<Element<Message>> = match &self.state {
+            State::Home => guis::home::render(self),
+            State::Playlists => guis::library_playlists::render(self)
         };
+
+        let mut top_row: Row<Message> = Row::new()
+            .align_items(iced::Align::Center)
+            .width(Length::Fill)
+            .padding(10)
+            .spacing(20);
+        let text = Text::new("YT Music")
+            .horizontal_alignment(HorizontalAlignment::Left);
+        top_row = top_row.push(text);
+
+        let mut btn_row = Row::new()
+            .spacing(10)
+            .width(Length::Fill);
+        for page in &mut self.pages {
+            let btn = Button::new(
+                &mut page.nav_state,
+                Text::new(format!("Go to {}", page.name))
+            )
+                .on_press(Message::Navigate(page.state.clone()))
+                .style(crate::style::Button::Primary);
+            btn_row = btn_row.push(
+                btn
+            );
+        }
+        let top_row = top_row.push(btn_row);
+        elements.insert(0, top_row.into());
+
+        let content = Column::with_children(elements)
+            .align_items(iced::Align::Center)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .spacing(20);
 
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x()
             .center_y()
+            .style(style::Container::Dark)
             .into()
     }
 }
 
 mod style {
-    use iced::{button, Background, Color, Vector};
+    use iced::{button, Background, Color, Vector, container};
 
     #[allow(dead_code)]
     pub enum Button {
@@ -152,6 +168,20 @@ mod style {
                 shadow_offset: Vector::new(0.5, 0.5),
                 text_color: Color::WHITE,
                 ..button::Style::default()
+            }
+        }
+    }
+
+    pub enum Container {
+        Dark
+    }
+
+    impl container::StyleSheet for Container {
+        fn style(&self) -> container::Style {
+            container::Style {
+                background: Some(Background::Color(Color::from_rgb(0.1, 0.1, 0.1))),
+                text_color: Some(Color::WHITE),
+                ..container::Style::default()
             }
         }
     }

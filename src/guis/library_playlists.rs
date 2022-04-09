@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use iced::{Column, Text, Row, Command, futures::lock::Mutex};
+use iced::{Column, Text, Row, Command, futures::lock::Mutex, Element};
 use reqwest::Method;
 use ytmusic_api::{
     YtMusicClient,
@@ -9,7 +9,8 @@ use ytmusic_api::{
 };
 use crate::Message;
 
-pub fn render<'a>(gui: &crate::MusicGui, mut content: Column<'a, Message>) -> Column<'a, Message> {
+pub fn render<'a>(gui: &crate::MusicGui) -> Vec<Element<'a, Message>> {
+    let mut elements: Vec<Element<Message>> = vec![];
     match &gui.playlists {
         Some(playlists) => {
             let mut playlists_column = Column::new()
@@ -24,30 +25,33 @@ pub fn render<'a>(gui: &crate::MusicGui, mut content: Column<'a, Message>) -> Co
                         .push(Text::new(playlist.title.as_str()))
                 );
             }
-            content = content.push(playlists_column);
+            elements.push(playlists_column.into());
         },
         None => {
-            content = content.push(
-                Text::new("Loading...").size(20)
+            elements.push(
+                Text::new("Loading...").size(20).into()
             );
         }
     }
-    content
+    elements
 }
 
-pub fn load(client: Arc<Mutex<YtMusicClient>>) -> Command<Message> {
-    Command::perform(async move {
-        let client = client.lock().await;
-        client.set_headers().await;
-        let playlists = client.endpoint("browse").make_request(
-            Method::POST,
-            RequestBody {
-                browseId: "FEmusic_liked_playlists".to_string(),
-                context: RequestContext::new()
-            }.as_body()
-        ).await.unwrap();
-        playlists.parse(ResponseType::LibraryPlaylists).await
-    }, |playlists| {
-        Message::LoadPlaylists(playlists)
-    })
+pub fn load(gui: &crate::MusicGui, client: Arc<Mutex<YtMusicClient>>) -> Command<Message> {
+    match &gui.playlists {
+        Some(_) => Command::none(),
+        None => Command::perform(async move {
+            let client = client.lock().await;
+            client.set_headers().await;
+            let playlists = client.endpoint("browse").make_request(
+                Method::POST,
+                RequestBody {
+                    browseId: "FEmusic_liked_playlists".to_string(),
+                    context: RequestContext::new()
+                }.as_body()
+            ).await.unwrap();
+            playlists.parse(ResponseType::LibraryPlaylists).await
+        }, |playlists| {
+            Message::LoadPlaylists(playlists)
+        })
+    }
 }
