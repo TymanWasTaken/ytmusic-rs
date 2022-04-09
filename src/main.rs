@@ -16,7 +16,8 @@ pub fn main() -> iced::Result {
 pub struct Page {
     pub name: String,
     pub state: State,
-    pub nav_state: button::State
+    pub nav_state: button::State,
+    pub instance: guis::PageInstance
 }
 
 #[allow(dead_code)]
@@ -57,12 +58,14 @@ impl Application for MusicGui {
                     Page {
                         name: "Home".to_string(),
                         state: State::Home,
-                        nav_state: button::State::new()
+                        nav_state: button::State::new(),
+                        instance: guis::PageInstance::Home(guis::HomePage::new())
                     },
                     Page {
                         name: "Playlists".to_string(),
                         state: State::Playlists,
-                        nav_state: button::State::new()
+                        nav_state: button::State::new(),
+                        instance: guis::PageInstance::LibraryPlaylists(guis::LibraryPlaylistsPage::new(client.clone()))
                     }
                 ]
             },
@@ -89,7 +92,7 @@ impl Application for MusicGui {
             Message::Navigate(state) => {
                 match &state {
                     State::Home => (),
-                    State::Playlists => command = guis::library_playlists::load(self, self.client.clone()),
+                    State::Playlists => command = self.pages[1].instance.load().unwrap_or(Command::none())
                 }
                 self.state = state;
             }
@@ -100,8 +103,8 @@ impl Application for MusicGui {
 
     fn view(&mut self) -> Element<Message> {
         let mut elements: Vec<Element<Message>> = match &self.state {
-            State::Home => guis::home::render(self),
-            State::Playlists => guis::library_playlists::render(self)
+            State::Home => self.pages[0].instance.render(),
+            State::Playlists => self.pages[1].instance.render()
         };
 
         let mut top_row: Row<Message> = Row::new()
