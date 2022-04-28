@@ -2,6 +2,7 @@
 edition = "2021"
 name = "ytmusic-api"
 version = "0.1.0"
+authors = ["Tyman"]
 
 [dependencies]
 reqwest = { version = "0.11.10", features = ["gzip"] }

@@ -28,7 +28,7 @@ impl LibraryPlaylistsPage {
 
     pub fn render<'a>(&self) -> Vec<Element<'a, Message>> {
         let mut elements: Vec<Element<Message>> = vec![];
-        match &self.gui.unwrap().playlists {
+        match &self.gui.as_ref().unwrap().playlists {
             Some(playlists) => {
                 let mut playlists_column = Column::new()
                     .align_items(iced::Align::Center)
@@ -55,22 +55,25 @@ impl LibraryPlaylistsPage {
     
     pub fn load(&self) -> Command<Message> {
         let mut commands: Vec<Command<Message>> = vec![];
+        let client = self.client.clone();
         // Load playlists if not already loaded
-        if let None = &self.gui.unwrap().playlists {
-            commands.push(Command::perform(async {
-                let client = self.client.lock().await;
-                client.set_headers().await;
-                let playlists = client.endpoint("browse").make_request(
-                    Method::POST,
-                    RequestBody {
-                        browseId: "FEmusic_liked_playlists".to_string(),
-                        context: RequestContext::new()
-                    }.as_body()
-                ).await.unwrap();
-                playlists.parse(ResponseType::LibraryPlaylists).await
-            }, |playlists| {
-                Message::LoadPlaylists(playlists)
-            }))
+        if let None = &self.gui.as_ref().unwrap().playlists {
+            commands.push(
+                Command::perform(async move {
+                    let client = client.lock().await;
+                    client.set_headers().await;
+                    let playlists = client.endpoint("browse").make_request(
+                        Method::POST,
+                        RequestBody {
+                            browseId: "FEmusic_liked_playlists".to_string(),
+                            context: RequestContext::new()
+                        }.as_body()
+                    ).await.unwrap();
+                    playlists.parse(ResponseType::LibraryPlaylists).await
+                }, |playlists| {
+                    Message::LoadPlaylists(playlists)
+                })
+            );
         }
     
         // Make commands to download each image
